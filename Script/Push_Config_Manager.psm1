@@ -1,3 +1,46 @@
+$script:Config = [XML](Get-Content $PSScriptRoot\config.xml)
+$script:SelectedColorScheme = "Dark"
+$script:SelectedDesignScheme = "Classic"
+
+function Get-GroupsFolderLocation {
+  return $script:Config.Configuration.GroupsFolderLocation.Location
+}
+
+function Get-SoftwareFolderLocation {
+  return $script:Config.Configuration.SoftwareFolderLocation.Location
+}
+
+function Get-BackgroundColor {
+  return $script:Config.Configuration.$script:SelectedColorScheme.BackColor
+}
+
+function Get-ForegroundColor {
+  return $script:Config.Configuration.$script:SelectedColorScheme.ForeColor
+}
+
+function Get-FontSettings {
+  return New-Object System.Drawing.Font($script:Config.Configuration.$script:SelectedDesignScheme.FontName, $script:Config.Configuration.$script:SelectedDesignScheme.FontSize)
+}
+
+function Set-ColorScheme ($SchemeName) {
+  $script:SelectedColorScheme = $SchemeName
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 $script:ConfigurationFileLocation = ""
 
 function Invoke-ChangePUSHConfigurationSourceFile {

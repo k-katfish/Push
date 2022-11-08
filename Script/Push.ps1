@@ -36,13 +36,13 @@ if ($help) {
 
 if (Get-Module Push_Config_Manager) { Remove-Module Push_Config_Manager }
 if (Get-Module Install_Software) { Remove-Module Install_Software }
-if (Get-Module PUSH_GUI_Manager) { Remove-Module PUSH_GUI_Manager }
+if (Get-Module GUIManager) { Remove-Module GUIManager }
 if (Get-Module PUSHapps_ToolStrip) { Remove-Module PUSHapps_ToolStrip }
 if (Get-Module CredentialManager) {Remove-Module CredentialManager}
 
 Import-Module $PSScriptRoot\Push_Config_Manager.psm1
 Import-Module $PSScriptRoot\Install_Software.psm1
-Import-Module $PSScriptRoot\PUSH_GUI_Manager.psm1
+Import-Module $PSScriptRoot\GUIManager.psm1
 Import-Module $PSScriptRoot\PUSHapps_ToolStrip.psm1
 Import-Module $PSScriptRoot\CredentialManager.psm1
 
@@ -90,34 +90,39 @@ function GetCreds {
   return $Credential
 }#>
 
-$GUIForm          = New-Object system.Windows.Forms.Form
+$GUIForm          = New-Object System.Windows.Forms.Form
+$GUIForm.ClientSize         = New-Object System.Drawing.Point(900,400)
+$GUIForm.Text               = "Push"
+$GUIForm.Icon               = "$PSScriptRoot\..\Media\Icon.ico"  
+$GUIForm.StartPosition      = 'CenterScreen'                              # the form will appear center screen 
+$GUIForm.BackColor = Get-BackgroundColor
 #$GUIForm.UseSystemColors = $true #https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.professionalcolortable.usesystemcolors?view=windowsdesktop-7.0
 
-$SelectLabel          = New-Object System.Windows.Forms.Label
-$SelectLabDropdown    = New-Object System.Windows.Forms.ComboBox
+$SelectGroupLabel     = New-Label -Text "Select Group:" -Location (16,25)
+$SelectGroup          = New-ComboBox -Text "All Machines" -Location (97,25) -Size (174, 23)
 
-$SelectAll            = New-Object System.Windows.Forms.Button
-$SelectNone           = New-Object System.Windows.Forms.Button
+$SelectAll            = New-Button -Text "Select All" -Location (16,50) -Size (128,23)
+$SelectNone           = New-Button -Text "Select None" -Location (144,50) -Size (128,23)
 $MachineList          = New-Object System.Windows.Forms.ListBox
-$InstallOnSelMachines = New-Object System.Windows.Forms.Button
+$InstallOnSelMachines = New-Button -Text "Install Now" -Location (16,369) -Size (256,23)
 
-$ManualSectionHeader  = New-Object System.Windows.Forms.Label
-$OrLabel              = New-Object System.Windows.Forms.Label
+$ManualSectionHeader  = New-Label -Text "Work on a single computer: " -Location (625, 25) 
+$OrLabel              = New-Label -Text "Enter Name:" -Location (625,50)
 $ManualNameTextBox    = New-Object System.Windows.Forms.TextBox
-$ApplyToManualEntry   = New-Object System.Windows.Forms.Button
-$EnterPS              = New-Object System.Windows.Forms.Button
-$ScanComputer         = New-Object System.Windows.Forms.Button
+$ApplyToManualEntry   = New-Button -Text "Install Now" -Location (625,100) -Size (256,25)
+$EnterPS              = New-Button -Text "Enter PSSession" -Location (625,125) -Size (256,25)
+$ScanComputer         = New-Button -Text "Scan Computer" -Location (625,150) -Size (256,25)
 
 $RunExecutablesList   = New-Object System.Windows.Forms.ListBox
 $SoftwareFilterTextBox= New-Object System.Windows.Forms.TextBox
-$SoftwareFilterLabel  = New-Object System.Windows.Forms.Label
+$SoftwareFilterLabel  = New-Label -Text "Search:" -Location (276,177)
 $FixesCheckBox        = New-Object System.Windows.Forms.CheckBox
 $SoftwareCheckBox     = New-Object System.Windows.Forms.CheckBox
 $UpdatesCheckBox      = New-Object System.Windows.Forms.CheckBox
 $DoneLabel            = New-Object System.Windows.Forms.label
 
 $GUIForm.Controls.AddRange(@(
-  $SelectLabel, $SelectLabDropdown,
+  $SelectGroupLabel, $SelectGroup,
   $SelectAll, $SelectNone, $MachineList, $InstallOnSelMachines,
   $ManualSectionHeader, $OrLabel, $ManualNameTextBox,
   $ApplyToManualEntry, $EnterPS, $ScanComputer,
@@ -126,31 +131,24 @@ $GUIForm.Controls.AddRange(@(
   $SoftwareFilterLabel, $OutputBox, $DoneLabel
 ))
 
-#Invoke-GenerateGUI -Config $Config -Application "PUSH"
+$SelectGroup.Items.Add("All Machines") *> $null
 
-$SelectLabel.text      = "Select Lab:"                                #   # The label says "Select lab:"
-#$SelectLabel.Font      = New-Object System.Drawing.Font($global:FontSettings) # and have that font
+Get-ChildItem -Path (Get-GroupsFolderLocation) | ForEach-Object {
+  $GroupName = $_.Name.Substring(0,$_.Name.length-4)
+  $SelectGroup.Items.Add($GroupName) *> $null
+}
 
-$SelectLabDropdown.text      = "Select..."
-$SelectLabDropdown.Items.Add("All Machines") *> $null
-
-Get-ChildItem -Path $Config.Package.Groups |
-  ForEach-Object {
-    $GroupName = $_.Name.Substring(0,$_.Name.length-4)
-    $SelectLabDropdown.Items.Add($GroupName) *> $null
-  }
-
-$SelectLabDropdown.Add_SelectedIndexChanged({
-  $SelectedLab = $SelectLabDropdown.SelectedItem
+$SelectGroup.Add_SelectedIndexChanged({
+  $SelectedGroup = $SelectGroup.SelectedItem
   $MachineList.Items.Clear()
-  if ($SelectedLab -ne "All Machines") {
-    $GroupFileName = "$($Config.Package.Groups)\$SelectedLab.txt"
+  if ($SelectedGroup -ne "All Machines") {
+    $GroupFileName = "$(Get-GroupsFolderLocation)\$SelectedGroup.txt"
     Get-Content -Path $GroupFileName | ForEach-Object {
       $MachineList.Items.Add($_) *> $null
     }
   } else {
-    Get-ChildItem -Path $Config.Package.Groups | ForEach-Object {
-      $groupfilename = "$($Config.Package.Groups)\$_"
+    Get-ChildItem -Path (Get-GroupsFolderLocation) | ForEach-Object {
+      $Groupfilename = "$(Get-GroupsFolderLocation)\$_"
       Get-Content -Path $GroupFileName | ForEach-Object {
         $MachineList.Items.Add($_) *> $null
       }
@@ -158,19 +156,15 @@ $SelectLabDropdown.Add_SelectedIndexChanged({
   }
 })
 
-
-$SelectAll.Text   = "Select All"
 $SelectAll.Add_Click({
-  For ($itemslenghth = 0; $itemslenghth -lt $MachineList.Items.Count; $itemslenghth++){
-    $MachineList.SetSelected($itemslenghth,$true)
+  For ($itemsLength = 0; $itemsLength -lt $MachineList.Items.Count; $itemsLength++){
+    $MachineList.SetSelected($itemsLength,$true)
   }
 })
 
-
-$SelectNone.Text      = "Select None"
 $SelectNone.Add_Click({
-  For ($itemslenghth = 0; $itemslenghth -lt $MachineList.Items.Count; $itemslenghth++){
-    $MachineList.SetSelected($itemslenghth,$false)
+  For ($itemsLength = 0; $itemsLength -lt $MachineList.Items.Count; $itemsLength++){
+    $MachineList.SetSelected($itemsLength,$false)
   }
 })
 
@@ -187,23 +181,11 @@ $InstallOnSelMachines.Add_Click({
   Invoke-Install -Machines $ListSelectedMachines -Installers $ListSelectedSoftware -Credential $script:Credential -Config $Config
 })
 
-
-$ManualSectionHeader.Text     = "Work on a single computer: "
-
-
-$OrLabel.text      = "Enter Name:"
-
-
-$ManualNameTextBox.text = ""
-
 $ManualNameTextBox.Add_KeyDown({
   If ($PSItem.KeyCode -eq "Enter"){
     $ScanComputer.PerformClick()
   }
 })
-
-
-$ApplyToManualEntry.text      = "Install Software"
 
 $ApplyToManualEntry.Add_Click({
   $CredentialObject = Get-StoredPSCredential
@@ -216,40 +198,31 @@ $ApplyToManualEntry.Add_Click({
   Invoke-Install -Machines $BETAEnteredComputer -Installers $BETASelectedSoftware -Config $Config -Credential $CredentialObject
 })
 
-
-$EnterPS.Text            = "Enter-PSSession"
-
 $EnterPS.Add_Click({
   $name = $ManualNameTextBox.text
   Start-Process powershell -ArgumentList "-NoExit","Enter-PSSession",$name
 })
 
-
-$ScanComputer.Text       = "Scan Computer" 
-
 $ScanComputer.Add_Click({
   $OutputBox.AppendText("Scanning"); Start-Sleep -Milliseconds 300; $OutputBox.AppendText("."); Start-Sleep -Milliseconds 300; $OutputBox.AppendText(".")
   Start-Sleep -Milliseconds 300; $OutputBox.AppendText(".`r`n") # kind of rudimentary but its also awesome looking so deal with it
-  Start-Process Powershell -ArgumentList "powershell .\Build\Scan_Host.exe -Hostname $($ManualNameTextBox.Text) -dir $Execution_Directory -configure $Configure -ColorScheme $ColorScheme -DesignScheme $DesignScheme" -NoNewWindow
+  Start-Process Powershell -ArgumentList "powershell $PSScriptRoot\Scan_Host.exe -Hostname $($ManualNameTextBox.Text) -dir $Execution_Directory -configure $Configure -ColorScheme $ColorScheme -DesignScheme $DesignScheme" -NoNewWindow
 })
 
 function loadSoftware {
   param([bool]$ShowHidden)
   $RunExecutablesList.Items.Clear()
   if ($ShowHidden) {
-    Get-ChildItem -Path $Config.Package.Software -filter "*$($SoftwareFilterTextBox.Text)*" -Force | ForEach-Object {
+    Get-ChildItem -Path (Get-SoftwareFolderLocation) -filter "*$($SoftwareFilterTextBox.Text)*" -Force | ForEach-Object {
       $RunExecutablesList.Items.Add($_.Name) *> $null
     }
   } else {
-    Get-ChildItem -Path $Config.Package.Software -filter "*$($SoftwareFilterTextBox.Text)*" | ForEach-Object {
+    Get-ChildItem -Path (Get-SoftwareFolderLocation) -filter "*$($SoftwareFilterTextBox.Text)*" | ForEach-Object {
       $RunExecutablesList.Items.Add($_.Name) *> $null
     }
   }
 }
 loadSoftware
-
-$SoftwareFilterLabel.Text = "Search:"
-$SoftwareFilterLabel.visible   = $true
 
 $SoftwareFilterTextBox.Add_TextChanged({
   loadSoftware -ShowHidden $FixesCheckBox.Checked
@@ -292,32 +265,35 @@ $ToolStrip.Items.Item($ToolSTrip.GetItemAt(5, 2)).DropDownItems.Add($TSFExitItem
 
 $GUIForm.Controls.Add($ToolStrip)
 
-<#$GUIContextMenu = New-Object System.Windows.Forms.ContextMenu
+$GUIContextMenu = New-Object System.Windows.Forms.ContextMenuStrip
 
-$GCMSetDarkMode = New-Object System.Windows.Forms.MenuItem
+$GCMSetDarkMode = New-Object System.Windows.Forms.ToolStripMenuItem
+$GCMSetLightMode = New-Object System.Windows.Forms.ToolStripMenuItem
+
 $GCMSetDarkMode.Text = "Change to Dark Mode"
 $GCMSetDarkMode.Add_Click({
   $GUIContextMenu.MenuItems.Remove($GCMSetDarkMode)
   $GUIContextMenu.MenuItems.Add($GCMSetLightMode)
-  $Config = Set-PUSH_Configuration $Config -ColorScheme "Dark" -Design "Original"
-  Invoke-GenerateGUI -Config $Config -Application "PUSH" -StyleOnly
+  Set-ColorScheme "Dark"
+  Invoke-RefreshColors
   RefreshPushToolStrip -ToolStrip $ToolStrip -Config $Config -Application "PUSH" 
 })
-$GCMSetLightMode = New-Object System.Windows.Forms.MenuItem
 $GCMSetLightMode.Text = "Change to Light Mode"
 $GCMSetLightMode.Add_Click({
   $GUIContextMenu.MenuItems.Remove($GCMSetLightMode)
   $GUIContextMenu.MenuItems.Add($GCMSetDarkMode)
-  $Config = Set-PUSH_Configuration $Config -ColorScheme "Light" -Design "Modern"
-  Invoke-GenerateGUI -Config $Config -Application "PUSH" -StyleOnly
+  Set-ColorScheme "Light"
+  Invoke-RefreshColors
   RefreshPushToolStrip -ToolStrip $ToolStrip -Config $Config -Application "PUSH" 
 })
 
-$GUIContextMenu.MenuItems.AddRange(@($GCMSetLightMode))
+$GUIContextMenu.ContextMenuStrip.Items.Add($GCMSetLightMode)
 
-$GUIForm.ContextMenuStrip = $GUIContextMenu#>
+$GUIForm.ContextMenuStrip = $GUIContextMenu
 
-Invoke-GenerateGUI -Config $Config -Application "PUSH"
+
+
+#Invoke-GenerateGUI -Config $Config -Application "PUSH"
 $GUIForm.ShowDialog()
 
 #########################################################################################################################################################################################################################

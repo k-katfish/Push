@@ -5,6 +5,48 @@
   Creation Date: 9/4
 #>
 
+function Invoke-RefreshColors {
+  $GUIForm.BackColor          = $Config.ColorScheme.Background
+  $GUIForm.Controls | ForEach-Object {
+    $_.BackColor = Get-BackgroundColor
+    $_.ForeColor = Get-ForegroundColor
+    $_.Font = Get-FontSettings
+  }
+}
+
+function New-Button ($Text, $Location, $Size) {
+  $Button = New-Object System.Windows.Forms.Button
+  $Button.Text = $Text
+  $Button.Location = New-Object System.Drawing.Point($Location[0], $Location[1])
+  $Button.Size = New-Object System.Drawing.Size($Size[0], $Size[1])
+  $Button.BackColor = Get-BackgroundColor
+  $Button.ForeColor = Get-ForegroundColor
+  $Button.Font = Get-FontSettings
+  return $Button
+}
+
+function New-Label ($Text, $Location) {
+  $Label = New-Object System.Windows.Forms.Label
+  $Label.Text = $Text
+  $Label.Location = New-Object System.Drawing.Point($Location[0], $Location[1])
+  $Label.AutoSize = $true
+  $Label.BackColor = Get-BackgroundColor
+  $Label.ForeColor = Get-ForegroundColor
+  $Label.Font = Get-FontSettings
+  return $Label
+}
+
+function New-ComboBox ($Location, $Size, $Text = "Select...") {
+  $ComboBox = New-Object System.Windows.Forms.ComboBox
+  $ComboBox.Text = "Select..."
+  $ComboBox.Location = New-Object System.Drawing.Point($Location[0], $Location[1])
+  $ComboBox.Size = New-Object System.Drawing.Size($Size[0], $Size[1])
+  $ComboBox.BackColor = Get-BackgroundColor
+  $ComboBox.ForeColor = Get-ForegroundColor
+  $ComboBox.Font = Get-FontSettings
+  return $ComboBox
+}
+
 function Invoke-GenerateGUI {
   param($Config, [String]$Application, [Switch][Alias("fast")]$StyleOnly)
 
@@ -13,27 +55,9 @@ function Invoke-GenerateGUI {
   if (-Not $StyleOnly) {
     switch ($Application) {
       "PUSH" {
-        Write-Verbose "Invoke-GG: Full: 0: Making PUSH GUI form..."
-        $GUIForm.ClientSize         = New-Object System.Drawing.Point(900,400)    # Set the size,
-        $GUIForm.Text               = $Config.About.Title + " " + $Config.About.Version         # The title, 
-        if ($b) { $GUIForm.Text     = $Config.About.Title + " " + $Config.About.Version + " " + $Config.About.Nickname + " - Beta" }
-        $GUIForm.Icon               = Convert-Path($Config.Design.Icon)  
-        $GUIForm.StartPosition      = 'CenterScreen'                              # the form will appear center screen 
-        Write-Verbose "Invoke-GG: Full: 0: Generated PUSH GUI form."
-
         Write-Verbose "Invoke-GG: Full: 1: Setting size of objects..."
-        $SelectLabel.AutoSize  = $true
-        $SelectLabDropdown.Size     = New-Object System.Drawing.Size(174, 23)
-        $SelectAll.Size             = New-Object System.Drawing.Size(128,23)
-        $SelectNone.Size            = New-Object System.Drawing.Size(128,23)
         $MachineList.size           = New-Object System.Drawing.Size(256,300)
-        $InstallOnSelMachines.Size  = New-Object System.Drawing.Size(256,23)
-        $ManualSectionHeader.Size   = New-Object System.Drawing.Size(256, 25)
-        $OrLabel.Size               = New-Object System.Drawing.Size(100, 25)
         $ManualNameTextBox.Size     = New-Object System.Drawing.Size(256, 25)
-        $ApplyToManualEntry.Size    = New-Object System.Drawing.Size(256,25)
-        $EnterPS.Size               = New-Object System.Drawing.Size(256,25)
-        $ScanComputer.Size          = New-Object System.Drawing.Size(256,25)
         $RunExecutablesList.Size    = New-Object System.Drawing.Size(345, 150)
         $SoftwareFilterLabel.Size   = New-Object System.Drawing.Size(70,23)
         $SoftwareFilterTextBox.Size = New-Object System.Drawing.Size(78,23)
@@ -45,18 +69,8 @@ function Invoke-GenerateGUI {
         Write-Verbose "Invoke-GG: Full: 1: Generated Sizes."
 
         Write-Verbose "Invoke-GG: Full: 2: Setting Locations of Objects..."
-        $SelectLabel.location           = New-Object System.Drawing.Point(16,25)
-        $SelectLabDropdown.location     = New-Object System.Drawing.Point(97,25)
-        $SelectAll.Location             = New-Object System.Drawing.Point(16,50)
-        $SelectNone.Location            = New-Object System.Drawing.Point(144,50)
         $MachineList.location           = New-Object System.Drawing.Point(16,73)
-        $InstallOnSelMachines.location  = New-Object System.Drawing.Point(16,369)
-        $ManualSectionHeader.Location   = New-Object System.Drawing.Point(625, 25) 
-        $OrLabel.location               = New-Object System.Drawing.Point(625,50)
         $ManualNameTextBox.location     = New-Object System.Drawing.Point(625,75)
-        $ApplyToManualEntry.location    = New-Object System.Drawing.Point(625,100)
-        $EnterPS.Location               = New-Object System.Drawing.Point(625,125)
-        $ScanComputer.Location          = New-Object System.Drawing.Point(625, 150)
         $RunExecutablesList.location    = New-Object System.Drawing.Point(275,25)
         $SoftwareFilterLabel.Location   = New-Object System.Drawing.Point(276,177)
         $SoftwareFilterTextBox.Location = New-Object System.Drawing.Point(330,174)
@@ -88,7 +102,7 @@ function Invoke-GenerateGUI {
     }
   }
 
-  switch ($Application) {
+  <#switch ($Application) {
     "PUSH" {
       Write-Verbose "Invoke-GG Colors: 1.0: Setting up Form object..."
       $GUIForm.BackColor          = $Config.ColorScheme.Background
@@ -200,8 +214,13 @@ function Invoke-GenerateGUI {
       $OutputBox.BorderStyle            = $Config.Design.BorderStyle
       Write-Verbose "Invoke-GG Style: 5.1: Configured BorderStyle for all objects."
     }
+    "PUSHNEW" {
+      $GUIForm.Controls | ForEach-Object {
+
+      }
+    }
     "RAUserMgr" {
       
     }
-  }
+  }#>
 }
