@@ -8,20 +8,20 @@
 function Invoke-GenerateGUI {
   param($Config, [String]$Application, [Switch][Alias("fast")]$StyleOnly)
 
-  log "Invoke-GenerateGUI (Invoke-GG): Generating GUI for $Application with configuration: CS:$($Config.ColorScheme.Name), DS:$($Config.DesignScheme.Name), App:$($Config.About.Name). StyleOnly = $StyleOnly" 1
+  Write-Verbose "Invoke-GenerateGUI (Invoke-GG): Generating GUI for $Application with configuration: CS:$($Config.ColorScheme.Name), DS:$($Config.DesignScheme.Name), App:$($Config.About.Name). StyleOnly = $StyleOnly" 1
 
   if (-Not $StyleOnly) {
     switch ($Application) {
       "PUSH" {
-        log "Invoke-GG: Full: 0: Making PUSH GUI form..." 0
+        Write-Verbose "Invoke-GG: Full: 0: Making PUSH GUI form..."
         $GUIForm.ClientSize         = New-Object System.Drawing.Point(900,400)    # Set the size,
         $GUIForm.Text               = $Config.About.Title + " " + $Config.About.Version         # The title, 
         if ($b) { $GUIForm.Text     = $Config.About.Title + " " + $Config.About.Version + " " + $Config.About.Nickname + " - Beta" }
         $GUIForm.Icon               = Convert-Path($Config.Design.Icon)  
         $GUIForm.StartPosition      = 'CenterScreen'                              # the form will appear center screen 
-        log "Invoke-GG: Full: 0: Generated PUSH GUI form." 0
+        Write-Verbose "Invoke-GG: Full: 0: Generated PUSH GUI form."
 
-        log "Invoke-GG: Full: 1: Setting size of objects..." 0
+        Write-Verbose "Invoke-GG: Full: 1: Setting size of objects..."
         $SelectLabel.AutoSize  = $true
         $SelectLabDropdown.Size     = New-Object System.Drawing.Size(174, 23)
         $SelectAll.Size             = New-Object System.Drawing.Size(128,23)
@@ -42,9 +42,9 @@ function Invoke-GenerateGUI {
         $UpdatesCheckBox.Size       = New-Object System.Drawing.Size(85, 23)
         $OutputBox.Size             = New-Object System.Drawing.Size(345, 190)
         $DoneLabel.AutoSize = $true
-        log "Invoke-GG: Full: 1: Generated Sizes." 0
+        Write-Verbose "Invoke-GG: Full: 1: Generated Sizes."
 
-        log "Invoke-GG: Full: 2: Setting Locations of Objects..." 0
+        Write-Verbose "Invoke-GG: Full: 2: Setting Locations of Objects..."
         $SelectLabel.location           = New-Object System.Drawing.Point(16,25)
         $SelectLabDropdown.location     = New-Object System.Drawing.Point(97,25)
         $SelectAll.Location             = New-Object System.Drawing.Point(16,50)
@@ -64,15 +64,15 @@ function Invoke-GenerateGUI {
         $SoftwareCheckBox.Location      = New-Object System.Drawing.Point(470,175)
         $UpdatesCheckBox.Location       = New-Object System.Drawing.Point(550, 175)
         $OutputBox.Location             = New-Object System.Drawing.Point(275,200)
-        log "Invoke-GG: Full: 2: Generated Locations." 0
+        Write-Verbose "Invoke-GG: Full: 2: Generated Locations."
 
-        log "Invoke-GG: Full: 2.5: Calculating Done Label location..." 0
+        Write-Verbose "Invoke-GG: Full: 2.5: Calculating Done Label location..."
         $DLX = ($OutputBox.Location.X + 2)
         $DLY = ($OutputBox.Location.Y + $OutputBox.Height + 130)
         $DoneLabel.Location  = New-Object System.Drawing.Point($DLX,$DLY)
-        log "Invoke-GG: Full: 2.5: Generated Done Label Location." 0
+        Write-Verbose "Invoke-GG: Full: 2.5: Generated Done Label Location."
 
-        log "Invoke-GG: Full: 3: Setting special properties..." 0
+        Write-Verbose "Invoke-GG: Full: 3: Setting special properties..."
         $RunExecutablesList.SelectionMode = 'MultiSimple'
         $MachineList.SelectionMode        = 'MultiSimple'
         $OutputBox.ReadOnly               = $true
@@ -80,7 +80,7 @@ function Invoke-GenerateGUI {
         $OutputBox.TextAlign              = "Left"
         $OutputBox.WordWrap               = $false
         $OutputBox.ScrollBars             = "Vertical,Horizontal"
-        log "Invoke-GG: Full: 3: Configured special properties for objects." 0
+        Write-Verbose "Invoke-GG: Full: 3: Configured special properties for objects."
       }
       "RAUserMgr" {
 
@@ -90,11 +90,11 @@ function Invoke-GenerateGUI {
 
   switch ($Application) {
     "PUSH" {
-      log "Invoke-GG Colors: 1.0: Setting up Form object..." 0
+      Write-Verbose "Invoke-GG Colors: 1.0: Setting up Form object..."
       $GUIForm.BackColor          = $Config.ColorScheme.Background
-      log "Invoke-GG Colors: 1.1: Configured Form object" 0 
+      Write-Verbose "Invoke-GG Colors: 1.1: Configured Form object" 
 
-      log "Invoke-GG Colors: 2.0: Setting up Background Color for all objects..." 0
+      Write-Verbose "Invoke-GG Colors: 2.0: Setting up Background Color for all objects..."
       $SelectLabel.BackColor          = $Config.ColorScheme.Background
       $SelectLabDropdown.BackColor    = $Config.ColorScheme.Background
       $SelectAll.BackColor            = $Config.ColorScheme.Background
@@ -113,9 +113,9 @@ function Invoke-GenerateGUI {
       $SoftwareCheckBox.BackColor     = $Config.ColorScheme.Background
       $UpdatesCheckBox.BackColor      = $Config.ColorScheme.Background
       $OutputBox.BackColor            = $Config.ColorScheme.Background
-      log "Invoke-GG Colors: 2.1: Configured Backcolor for all objects" 0
+      Write-Verbose "Invoke-GG Colors: 2.1: Configured Backcolor for all objects"
 
-      log "Invoke-GG Colors: 3.0: Setting up Foreground Color for all objects..." 0
+      Write-Verbose "Invoke-GG Colors: 3.0: Setting up Foreground Color for all objects..."
       $SelectLabel.ForeColor          = $Config.ColorScheme.Foreground
       $SelectLabDropdown.ForeColor    = $Config.ColorScheme.Foreground
       $SelectAll.ForeColor            = $Config.ColorScheme.Foreground
@@ -135,9 +135,9 @@ function Invoke-GenerateGUI {
       $SoftwareCheckBox.ForeColor     = $Config.ColorScheme.Foreground
       $UpdatesCheckBox.ForeColor      = $Config.ColorScheme.Foreground
       $OutputBox.ForeColor            = $Config.ColorScheme.Foreground
-      log "Invoke-GG Colors: 3.1: Configured Foreground Color for all objects..." 0
+      Write-Verbose "Invoke-GG Colors: 3.1: Configured Foreground Color for all objects..."
 
-      log "Invoke-GG Style: 4.0: Setting up Font for all objects..." 0
+      Write-Verbose "Invoke-GG Style: 4.0: Setting up Font for all objects..."
       $SelectLabel.Font          = New-Object System.Drawing.Font($Config.Design.FontName, $Config.Design.FontSize) 
       $SelectLabDropdown.Font    = New-Object System.Drawing.Font($Config.Design.FontName, $Config.Design.FontSize)
       $SelectAll.Font            = New-Object System.Drawing.Font($Config.Design.FontName, $Config.Design.FontSize)
@@ -158,9 +158,9 @@ function Invoke-GenerateGUI {
       $UpdatesCheckBox.Font      = New-Object System.Drawing.Font($Config.Design.FontName, $Config.Design.FontSize)
       $OutputBox.Font            = New-Object System.Drawing.Font($Config.Design.FontName, $Config.Design.FontSize)
       $DoneLabel.Font            = New-Object System.Drawing.Font($Config.Design.FontName, $Config.Design.FontSize)
-      log "Invoke-GG Style: 4.1: Configured Font for all objects." 0
+      Write-Verbose "Invoke-GG Style: 4.1: Configured Font for all objects."
 
-      log "Invoke-GG Style: 5.0: Setting up FlatStyle for all objects..." 0
+      Write-Verbose "Invoke-GG Style: 5.0: Setting up FlatStyle for all objects..."
       $SelectLabel.FlatStyle          = $Config.Design.FlatStyle
       $SelectLabDropdown.FlatStyle    = $Config.Design.FlatStyle
       $SelectAll.FlatStyle            = $Config.Design.FlatStyle
@@ -180,9 +180,9 @@ function Invoke-GenerateGUI {
       $SoftwareCheckBox.FlatStyle     = $Config.Design.FlatStyle
       $UpdatesCheckBox.FlatStyle      = $Config.Design.FlatStyle
       #$OutputBox.FlatStyle            = $Config.Design.FlatStyle
-      log "Invoke-GG Style: 4.1: Configured FlatStyle for all objects." 0
+      Write-Verbose "Invoke-GG Style: 4.1: Configured FlatStyle for all objects."
 
-      log "Invoke-GG Style: 5.0: Setting up BorderStyle for all objects..." 0
+      Write-Verbose "Invoke-GG Style: 5.0: Setting up BorderStyle for all objects..."
       #$SelectLabDropdown.BorderStyle    = $Config.Design.BorderStyle
       #$SelectAll.BorderStyle            = $Config.Design.BorderStyle
       #$SelectNone.BorderStyle           = $Config.Design.BorderStyle
@@ -198,7 +198,7 @@ function Invoke-GenerateGUI {
       #$SoftwareFilterLabel.BorderStyle  = $Config.Design.BorderStyle
       #$SoftwareCheckBox.BorderStyle     = $Config.Design.BorderStyle
       $OutputBox.BorderStyle            = $Config.Design.BorderStyle
-      log "Invoke-GG Style: 5.1: Configured BorderStyle for all objects." 0
+      Write-Verbose "Invoke-GG Style: 5.1: Configured BorderStyle for all objects."
     }
     "RAUserMgr" {
       

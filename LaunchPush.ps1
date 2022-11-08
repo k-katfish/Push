@@ -1,0 +1,1 @@
+Start-Process Powershell.exe -ArgumentList "Script\Push.ps1" -UseNewEnvironment
