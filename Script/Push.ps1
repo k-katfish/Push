@@ -90,36 +90,36 @@ function GetCreds {
   return $Credential
 }#>
 
-$GUIForm          = New-Object System.Windows.Forms.Form
+$GUIForm                    = New-Object System.Windows.Forms.Form
 $GUIForm.ClientSize         = New-Object System.Drawing.Point(900,400)
 $GUIForm.Text               = "Push"
 $GUIForm.Icon               = "$PSScriptRoot\..\Media\Icon.ico"  
-$GUIForm.StartPosition      = 'CenterScreen'                              # the form will appear center screen 
+$GUIForm.StartPosition      = 'CenterScreen'
 $GUIForm.BackColor = Get-BackgroundColor
-#$GUIForm.UseSystemColors = $true #https://learn.microsoft.com/en-us/dotnet/api/system.windows.forms.professionalcolortable.usesystemcolors?view=windowsdesktop-7.0
 
 $SelectGroupLabel     = New-Label -Text "Select Group:" -Location (16,25)
 $SelectGroup          = New-ComboBox -Text "All Machines" -Location (97,25) -Size (174, 23)
 
 $SelectAll            = New-Button -Text "Select All" -Location (16,50) -Size (128,23)
 $SelectNone           = New-Button -Text "Select None" -Location (144,50) -Size (128,23)
-$MachineList          = New-Object System.Windows.Forms.ListBox
+$MachineList          = New-ListBox -Size (256,300) -Location (16,73)
 $InstallOnSelMachines = New-Button -Text "Install Now" -Location (16,369) -Size (256,23)
 
 $ManualSectionHeader  = New-Label -Text "Work on a single computer: " -Location (625, 25) 
 $OrLabel              = New-Label -Text "Enter Name:" -Location (625,50)
-$ManualNameTextBox    = New-Object System.Windows.Forms.TextBox
+$ManualNameTextBox    = New-TextBox -Location (625,75) -Size (256, 25)
 $ApplyToManualEntry   = New-Button -Text "Install Now" -Location (625,100) -Size (256,25)
 $EnterPS              = New-Button -Text "Enter PSSession" -Location (625,125) -Size (256,25)
 $ScanComputer         = New-Button -Text "Scan Computer" -Location (625,150) -Size (256,25)
 
-$RunExecutablesList   = New-Object System.Windows.Forms.ListBox
-$SoftwareFilterTextBox= New-Object System.Windows.Forms.TextBox
+$RunExecutablesList   = New-ListBox -Size (345, 150) -Location (275,25)
+$SoftwareFilterTextBox= New-TextBox -Size (78,23) -Location (330,174)
 $SoftwareFilterLabel  = New-Label -Text "Search:" -Location (276,177)
-$FixesCheckBox        = New-Object System.Windows.Forms.CheckBox
-$SoftwareCheckBox     = New-Object System.Windows.Forms.CheckBox
-$UpdatesCheckBox      = New-Object System.Windows.Forms.CheckBox
-$DoneLabel            = New-Object System.Windows.Forms.label
+#$FixesCheckBox        = New-Object System.Windows.Forms.CheckBox
+#$SoftwareCheckBox     = New-Object System.Windows.Forms.CheckBox
+#$UpdatesCheckBox      = New-Object System.Windows.Forms.CheckBox
+$ShowHiddenCheckbox   = New-Checkbox -Text "Show Hidden" -Location (470,175) -Size (80,23)
+$DoneLabel            = New-Label -Text "Done" -Location (($OutputBox.Location.X + 2), ($OutputBox.Location.Y + $OutputBox.Height + 130))
 
 $GUIForm.Controls.AddRange(@(
   $SelectGroupLabel, $SelectGroup,
@@ -127,9 +127,17 @@ $GUIForm.Controls.AddRange(@(
   $ManualSectionHeader, $OrLabel, $ManualNameTextBox,
   $ApplyToManualEntry, $EnterPS, $ScanComputer,
   $RunExecutablesList, $FixesCheckBox,
-  $SoftwareCheckBox, $SoftwareFilterTextBox, $UpdatesCheckBox,
+  $SoftwareFilterTextBox, $ShowHiddenCheckbox,
   $SoftwareFilterLabel, $OutputBox, $DoneLabel
 ))
+
+$RunExecutablesList.SelectionMode = 'MultiExtended'
+$MachineList.SelectionMode        = 'MultiExtended'
+$OutputBox.ReadOnly               = $true
+$OutputBox.MultiLine              = $true
+$OutputBox.TextAlign              = "Left"
+$OutputBox.WordWrap               = $false
+$OutputBox.ScrollBars             = "Vertical,Horizontal"
 
 $SelectGroup.Items.Add("All Machines") *> $null
 
@@ -169,7 +177,6 @@ $SelectNone.Add_Click({
 })
 
 
-$InstallOnSelMachines.text      = "Install Software"
 $InstallOnSelMachines.Add_Click({
   $CredentialObject = Get-StoredPSCredential
   if ($CredentialObject -eq -1) {
@@ -178,7 +185,7 @@ $InstallOnSelMachines.Add_Click({
   $ListSelectedMachines = $MachineList.SelectedItems
   $ListSelectedSoftware = $RunExecutablesList.SelectedItems
   Write-Verbose "Installing $ListSelectedSoftware on $ListSelectedMachines"
-  Invoke-Install -Machines $ListSelectedMachines -Installers $ListSelectedSoftware -Credential $script:Credential -Config $Config
+  Invoke-Install -Machines $ListSelectedMachines -Installers $ListSelectedSoftware -Credential $CredentialObject -Config $Config
 })
 
 $ManualNameTextBox.Add_KeyDown({
@@ -195,7 +202,7 @@ $ApplyToManualEntry.Add_Click({
   $SelectedComputer = $ManualNameTextBox.text
   $SelectedSoftware = $RunExecutablesList.SelectedItems
   Write-Verbose "Installing $SelectedSoftware on $SelectedComputer"
-  Invoke-Install -Machines $BETAEnteredComputer -Installers $BETASelectedSoftware -Config $Config -Credential $CredentialObject
+  Invoke-Install -Machines $SelectedComputer -Installers $SelectedSoftware -Config $Config -Credential $CredentialObject
 })
 
 $EnterPS.Add_Click({
@@ -204,15 +211,19 @@ $EnterPS.Add_Click({
 })
 
 $ScanComputer.Add_Click({
-  $OutputBox.AppendText("Scanning"); Start-Sleep -Milliseconds 300; $OutputBox.AppendText("."); Start-Sleep -Milliseconds 300; $OutputBox.AppendText(".")
-  Start-Sleep -Milliseconds 300; $OutputBox.AppendText(".`r`n") # kind of rudimentary but its also awesome looking so deal with it
+  $OutputBox.AppendText("Scanning")
+  Start-Sleep -Milliseconds 300
+  $OutputBox.AppendText(".")
+  Start-Sleep -Milliseconds 300
+  $OutputBox.AppendText(".")
+  Start-Sleep -Milliseconds 300
+  $OutputBox.AppendText(".`r`n") # kind of rudimentary but its also awesome looking so deal with it - Matt
   Start-Process Powershell -ArgumentList "powershell $PSScriptRoot\Scan_Host.exe -Hostname $($ManualNameTextBox.Text) -dir $Execution_Directory -configure $Configure -ColorScheme $ColorScheme -DesignScheme $DesignScheme" -NoNewWindow
 })
 
 function loadSoftware {
-  param([bool]$ShowHidden)
   $RunExecutablesList.Items.Clear()
-  if ($ShowHidden) {
+  if ($ShowHiddenCheckbox.Checked) {
     Get-ChildItem -Path (Get-SoftwareFolderLocation) -filter "*$($SoftwareFilterTextBox.Text)*" -Force | ForEach-Object {
       $RunExecutablesList.Items.Add($_.Name) *> $null
     }
@@ -224,28 +235,9 @@ function loadSoftware {
 }
 loadSoftware
 
-$SoftwareFilterTextBox.Add_TextChanged({
-  loadSoftware -ShowHidden $FixesCheckBox.Checked
-})
+$SoftwareFilterTextBox.Add_TextChanged({ loadSoftware })
 
-$FixesCheckBox.Text     = "Hidden:"
-$FixesCheckBox.Checked  = $false
-$FixesCheckBox.Add_CheckStateChanged({
-  loadSoftware -Fixes $FixesCheckBox.Checked -Software $SoftwareCheckBox.Checked -Updates $UpdatesCheckBox.Checked
-})
-
-$SoftwareCheckBox.Text       = "Software"
-$SoftwareCheckBox.Checked    = $true
-$SoftwareCheckBox.Add_CheckStateChanged({
-  loadSoftware -Fixes $FixesCheckBox.Checked -Software $SoftwareCheckBox.Checked -Updates $UpdatesCheckBox.Checked
-})
-
-$UpdatesCheckBox.Text = "Updates"
-$UpdatesCheckBox.Checked = $false
-
-$UpdatesCheckBox.Add_CheckStateChanged({
-  loadSoftware -Fixes $FixesCheckBox.Checked -Software $SoftwareCheckBox.Checked -Updates $UpdatesCheckBox.Checked
-})
+$ShowHiddenCheckbox.Add_Click({ loadSoftware })
 
 $DoneLabel.Text      = "Not done yet"
 $DoneLabel.Forecolor = $Config.ColorScheme.Success
