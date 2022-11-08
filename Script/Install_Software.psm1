@@ -1,31 +1,15 @@
-###########################################################################   
-# Documentation: Create a list of online machines                         #
-# We can't connect to an offline machine, and that would cause            #
-# error messages (scary). So we'll use test-connection to find            #
-# online machines and add those to a list which we'll operate             #
-# on later.                                                               #
-###########################################################################
-function Get-OnlineMachines ($ScanMachines) {                             #
-  $OnlineHosts = @()                                                      # Create a new array (list?)
-  $ScanMachines | ForEach-Object {                                        # iterate through selected machines:
-    $online = Test-Connection -Count 1 -ComputerName $_ -Quiet            # Try to connect to it
-    log "Pinging $_, came up $online" 1 -l $script:LogFileName           ### Log that we tried to talk to it
-    if ($online) {                                                        # If it was online:
-      $OnlineHosts += ($_)                                                # add it to our list of working machines
-    } else {                                                              # If it wasn't online:
-      log "Unable to connect to $_, skipping that machine." 2 -l $script:LogFileName # write it
-    }                                                                     #
-  }                                                                       #
-  return $OnlineHosts                                                     # return it
-}                                                                         #
-###########################################################################
-
-<#
-TODO: Refactor Installers (maybe even into just one function that takes CSSP as an argument)
-so that it's easier to call from an instance of Push. This matters in a bit, when we
-start working on V2.9 (Jerzy Jobs) and we want to use a separate Jobs module to schedule
-a job and execute it in the background, to free up the UI so someone can keep using it.
-#>
+function Get-OnlineMachines ($ScanMachines) {
+  $OnlineHosts = @()
+  $ScanMachines | ForEach-Object {
+    $online = Test-Connection -Count 1 -ComputerName $_ -Quiet
+    if ($online) {
+      $OnlineHosts += ($_)
+    } else {
+      Write-Verbose "Unable to connect to $_"
+    }
+  }
+  return $OnlineHosts
+}
 
 function Get-ValidPushInstallers {
   param(
@@ -38,9 +22,7 @@ function Get-ValidPushInstallers {
     [Parameter()][switch]
     $BATs,
     [Parameter()][switch]
-    $TestUCSSP,
-    [Parameter()][switch]
-    $notify
+    $TestUCSSP
   )
 
   if ($TestUCSSP) {
@@ -52,16 +34,6 @@ function Get-ValidPushInstallers {
   $ExecutableFiles = $SetOfFiles | Where-Object  -Property Name -Like "*.exe" # Get any .exe files
   $ScriptFiles1 = $SetOfFiles | Where-Object -Property Name -Like "*.ps1" # Get any .ps1 files
   $BatchFiles = $SetOfFiles | Where-Object -Property Name -like "*.bat" # Get any .bat files
-
-  if ($notify) {
-    if ($SetOfFiles | Where-Object -Property Name -like "*README*") { # if there are any README files:
-      log "Get-VPI: Found a README, displaying as a popup" 1           # log that we found a README
-      $Info_flag = $SetOfFiles | Where-Object {$_.Name -like "README*"}      #
-      $Info_flag_Content = Get-Content -Path $Info_flag.FullName        # read the contents of the file
-      log "Get-VPI: Readme: '$Info_flag_Content'" 1                       #
-      [System.Windows.Forms.MessageBox]::Show($Info_flag_Content)       # popup a message showing that content
-    }                                                                   #
-  }
 
   if ($BATs) {
     return $BatchFiles
@@ -78,28 +50,18 @@ function Get-ValidPushInstallers {
         $ScriptFiles.add($ScriptFiles1)
       } else {
         $ScriptFiles1 | ForEach-Object { 
-          log "Found Object $_" 1
-          log "Has name $($_.Name)" 1
           $ScriptFiles.add($_) *> $null
         } 
       }
     } catch { }
 
-    log "Get-VPI: Found these files: $SetOfFiles" 1 
-    log "Get-VPI: And our scripts: $ScriptFiles" 1
     $ExecutableFiles | ForEach-Object {
       for ($i = 0; $i -lt $ScriptFiles1.Count; $i++) { 
-        log "Get-VPI: Looking at $($ScriptFiles1[$i].BaseName) and $($_.BaseName)" 1
         if ($ScriptFiles1[$i].BaseName -eq $_.BaseName) { 
-          log "Get-VPI: Found a match: $($ScriptFiles1[$i].BaseName) & $($_.BaseName) . Removing matching script." 1
           $ScriptFiles.Remove($ScriptFiles1[$i])
         } 
       }
     }
-    log "Get-VPI: Returning scripts: $ScriptFiles" 1
-    #$ScriptFiles | % {Write-Host "Thing: $_"}
-    #$ReturnedScripts = $ScriptFiles.ToArray()
-    #$ReturnedScripts | % {Write-Host "RS Thing: $_"}
     return $ScriptFiles
   }
 }
@@ -137,58 +99,33 @@ function Start-Install {
     [Parameter()][Alias("UseCredSSP")][Switch]
     $ForceUseCredSSPAuthentication,
 
-    [Parameter()]
-    $Config,
+#    [Parameter()]
+#    $Config,
     
     [Parameter()][PSCredential]
     $Credential
   )
 
-  try { log "Attempting to install $ListOfInstallers on $ListOfMachines using CredSSP=$ForceUseCredSSPAuthentication" 0 }
-  catch { if ($_ -like "*The term 'log' is not recognized*") { return (1, "Unable to log.", "attempting to log information failed, the term 'log' is not recognized. Please ensure log has been imported to the sesion correctly.") } return (1, "Unable to log.", "There was an issue with logging. Message: $_") }
-
-  #if ($Config.Package.Location -like "") { return (1, "Unable to get P Drive location, refusing to continue.", "Is this running in a session with a valid PUSH configuration object?")}
-
   $WorkingMachines = Get-OnlineMachines($ListOfMachines)
-  log $WorkingMachines 0  
 
   if ($WorkingMachines) {                                
-    log "Acting on '$WorkingMachines'" 0  
-
     $AUTHMETHOD = "Kerberos"
 
-    log "1.1: Testing for CredSSP..." 0 
     if ($ForceUseCredSSPAuthentication) {
-      log "1.1: Using CredSSP Authentication." 0  
-      log "1.2: Configuring enable CredSSP Session." 0  
-      log "1.3: Enabling WSManCredSSP for working machines..." 0  
       $WorkingMachines | ForEach-Object {            
-        log "1.3: Enabling CSSP for $_" 0  
         Start-Process powershell.exe -ArgumentList "Enable-WSManCredSSP","Client","$_","-Force" -Verb RunAs -Wait 
       }                                                          
-      log "1.4: Enabling WSManCredSSP for *.engr.colostate.edu..." 0  
-      Start-Process powershell.exe -ArgumentList "Enable-WSManCredSSP","-Role","'Client'","-DelegateComputer",'"*.engr.colostate.edu"',"-Force" -Verb RunAs -Wait 
-      log "1.4: Enabling WSManCredSSP on Session..." 0  
+      #Start-Process powershell.exe -ArgumentList "Enable-WSManCredSSP","-Role","'Client'","-DelegateComputer",'"*.engr.colostate.edu"',"-Force" -Verb RunAs -Wait 
       Invoke-Command -ComputerName $WorkingMachines -ScriptBlock {          
         Start-Process powershell.exe -ArgumentList "Enable-WSManCredSSP","Server","-Force" -Verb RunAs -Wait  
-      }                                     
-      log "1.5: Setting AUTHMETHOD to 'CredSSP" 0  
+      }                         
+
       $AUTHMETHOD = "CredSSP"    
-      log "1.6: Ready for CredSSP Session" 0  
       #$SESSION = New-PSSession $WorkingMachines -Credential $Credential -Authentication Credssp # Create the PSSession
     }
 
-    log "2.0: Creating PS Sessions..." 0  
-    log "2.0: i) This session will be with $WorkingMachines" 0  
-    log "2.0: i) This session will be run by user: $($Credential.UserName)" 0  
-    log "2.0: i) This session will have authentication: $AUTHMETHOD" 0  
     $SESSION = New-PSSession -ComputerName $WorkingMachines -Credential $Credential -Authentication $AUTHMETHOD
-    log "2.1: i) Session created." 0
-    log "2.2: Session: $SESSION" 0
 
-    <#Configure the sessions#>
-    log "3.0: Configuring session..." 0  
-    log "3.1: Configuring Session: Setting EP" 0   
     try { 
       Invoke-Command -Session $SESSION -ScriptBlock { 
         Set-ExecutionPolicy Bypass -Scope Process -Force
@@ -197,24 +134,15 @@ function Start-Install {
       [System.Windows.Forms.MessageBox]::Show("Could not connect to the session. WinRM is not yet enabled. Most likely due to slow startup-should work after waiting for a few minutes.", "WinRM not enabled.")
       return (2, "FAILED to act on created session.", "Session was created, but was unable to be configured after creation.")
     } 
-    log "3.1: Configuring session: Set EP." 0   
-    log "3.2: Configuring Session: Mapping P drive" 0  
-    log "3.3: Configuring Session: Setting SMNZC = 1" 0   
-    $PDriveLocation = $Config.Package.Location
-    $PDriveCallOutput = Invoke-Command -Session $SESSION -ScriptBlock {
+    $PDriveLocation = Get-SoftwareFolderLocation
+    Invoke-Command -Session $SESSION -ScriptBlock {
       New-PSDrive -Name P -Root $using:PDriveLocation -PSProvider "Filesystem" -Credential $using:Credential
       $env:SEE_MASK_NOZONECHECKS = 1 
     }
-    log "3.2: SESSION INFO: $PDriveCallOutput" 0
-    log "3.2: Configuring Session: Mapped P Drive" 0   
-    log "3.3: Configuring Session: Set SMNZC = 1" 0    
     
-    <#Installing software from $ALISTOFINSTALLERS#>
-    log "4.0: Beginning install of selected software..." 1   
-    ForEach ($Software in $ListOfInstallers) { 
-      log "4.0: Installing $Software. Scanning $($Config.Package.Software)\$Software for files..."
+    ForEach ($Software in $ListOfInstallers) {
 
-      $files = Get-ChildItem "$($Config.Package.Software)\$Software"   
+      $files = Get-ChildItem "$(Get-SoftwareFolderLocation)\$Software"   
 
       $executables = $null
       $scripts = $null
@@ -224,67 +152,32 @@ function Start-Install {
       $scripts = Get-ValidPushInstallers $files -PSs
       $bats = Get-ValidPushInstallers $files -BATs
 
-      #We need a way to test if Push is running interactively or not, and maybe or maybe not show a popup.
-      #Maybe a -nonotify flag or something?
-      #Get-ValidPushInstallers $files -notify
-
-      log "Installing $Software..." 2  
-      log "4.1: Here's what we've got:" 1  
-      log "4.1: Files: $files" 1  
-      log "4.1: executables: $executables" 1  
-      log "4.1: scripts: $scripts" 1   
-      log "4.1: bats: $bats" 1  
-
       $executables | ForEach-Object {
-        log "4.1.E: EXE: Found $($_.FullName), attempting to execute" 1   
-        $EXEJobInfo = Invoke-Command -Session $SESSION -ScriptBlock {
-#          Add-Content "$using:lfilename-$env:COMPUTERNAME.txt" "STARTING EXECUTION OF $($using:_.Name)"
-          & $using:_.FullName 
-        } -AsJob | Get-Job | Wait-Job
-        log "4.1.E: EXE: Job Information: $EXEJobInfo" 0
-      } 
+        Invoke-Command -Session $SESSION -ScriptBlock { & $using:_.FullName } -AsJob | Get-Job | Wait-Job
+      }
       
       $scripts | ForEach-Object {                           
-        log "4.1.P: PS1: Found $($_.FullName), attempting to run with powershell" 1  
         Set-ExecutionPolicy Bypass -Scope Process
         Invoke-Command -Session $SESSION -FilePath $_.FullName
-        log "4.1.P: PS1: Ran $($_.FullName) on remote computer"
-      } 
+      }
       
       $bats | ForEach-Object { 
         log "4.1: BAT: Found $($_.FullName), batching." 1   
-        Invoke-Command -Session $SESSION -ScriptBlock { 
-#          Add-Content "$using:lfilename-$env:COMPUTERNAME.txt" "STARTING EXECUTION OF BATCH $($using:_.Name)" 
-          & $using:_.FullName 
-        } 
+        Invoke-Command -Session $SESSION -ScriptBlock { & $using:_.FullName } 
       } 
-
-      log "4.2: Finished $Software" 1  
     } 
 
-    log "5.0: Cleanup: Beginning clean up on Remote machine" 0    
-    log "5.1: Cleanup: Setting env:SMNZC to 0" 0  
-    log "5.2: Cleanup: NOT RESETTING EP: will let bypass expire naturally." 0  
-    log "5.3: Cleanup: Removing P drive" 0  
     Invoke-Command -Session $SESSION -ScriptBlock {  
       $env:SEE_MASK_NOZONECHECKS = 0
-    #  Set-ExecutionPolicy Restricted  
       Remove-PSDrive -Name P 
-    } 
-    log "5.1: Cleanup: Set env:smz to 0" 0   
-    log "5.3: Cleanup: Removed P drive" 0   
-    log "5.4: Cleanup: Removing session $SESSION" 0   
+    }
     Remove-PSSession -Session $SESSION 
-    log "5.4: Cleanup: Removed session" 0   
-    log "Finished Cleanup" 1     
-
   } else { 
-    log "All of $ListOfMachines were offline." 1    
     try {
       $DoneLabel.Text = "All selected machines were offline."
-      $DoneLabel.ForeColor = $Config.ColorScheme.Warning 
+      $DoneLabel.ForeColor = Get-WarningColor
       $DoneLabel.Visible = $true 
-    } catch { }      
+    } catch { }
     return (1, "All of $ListOfMachines were offline.", "Please ensure that at least 1 selected machine is online.") 
   }   
   return 0  
@@ -307,39 +200,32 @@ function Invoke-Install {
     [Parameter()][PSCredential]
     $Credential
   )
-  
-  log "Invoke-Install: Called with parameters: ListOfMachines: $ListOfMachines, ListOfInstallers: $ListOfInstallers, FUCSSPAuth: $ForceUseCredSSPAuthentication, Config: $Config, Credential: $($Credential.Username)"
 
   try {
     $DoneLabel.Visible = $false
   } catch {}
 
   ForEach ($Software in $ListOfInstallers) {
-    log "Found software $Software, checking for CredSSP" 1
-    $files = Get-ChildItem "$($Config.Package.Software)\$Software"
+    $files = Get-ChildItem "$(Get-SoftwareFolderLocation)\$Software"
 
     if (Get-ValidPushInstallers $files -TestUCSSP) { 
-      log "CredSSP Necessary for $Software." 1
-      Start-Install -ListOfMachines $ListOfMachines -ListOfInstallers $Software -Config $Config -Credential $Credential -ForceUseCredSSPAuthentication 
+      Start-Install -ListOfMachines $ListOfMachines -ListOfInstallers $Software -Credential $Credential -ForceUseCredSSPAuthentication 
     }
     else { 
-      log "Installing $Software without CredSSP" 1
-      Start-Install -ListOfMachines $ListOfMachines -ListOfInstallers $Software -Config $Config -Credential $Credential 
+      Start-Install -ListOfMachines $ListOfMachines -ListOfInstallers $Software -Credential $Credential 
     }
   }
 
   try {
     $DoneLabel.Text = "Finished Installing $ListOfInstallers" 
+    $DoneLabel.Forecolor = Get-SuccessColor
     $DoneLabel.Visible = $true 
-  } catch { log "Finished Installing $ListOfSoftware" 1   }
-  log "Done." 2
+  } catch { Write-Host "Finished Installing $ListOfSoftware" }
 
   try {
     $DoneLabel.Visible = $true
   } catch {}
 }
-
-
 
 function Start-Uninstall {
   param(

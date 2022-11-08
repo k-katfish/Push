@@ -44,6 +44,6 @@
     <FontName>Open Sans</FontName>
     <FontSize>11</FontSize>
   </Yesterday>
-  <GroupsFolderLocation Location="..\Groups" isUNC='false'/>
-  <SoftwareFolderLocation Location="..\Software"/>
+  <GroupsFolderLocation Location="\\software.engr.colostate.edu\software\ENS\Push_2.0\Groups" isUNC='true'/>
+  <SoftwareFolderLocation Location="\\software.engr.colostate.edu\software\ENS\Push_2.0\Software"/>
 </Configuration>

@@ -5,9 +5,12 @@
   Creation Date: 9/4
 #>
 
-function Invoke-RefreshColors {
-  $GUIForm.BackColor          = $Config.ColorScheme.Background
-  $GUIForm.Controls | ForEach-Object {
+if (-Not (Get-Module ConfigManager)) {Import-Module $PSScriptRoot\ConfigManager.psm1}
+
+function Invoke-RefreshColors ($Form) {
+  $Form.BackColor = Get-BackgroundColor
+  $Form.ForeColor = Get-ForegroundColor
+  $Form.Controls | ForEach-Object {
     $_.BackColor = Get-BackgroundColor
     $_.ForeColor = Get-ForegroundColor
     $_.Font = Get-FontSettings
@@ -67,8 +70,9 @@ function New-ListBox ($Location, $Size) {
   return $ListBox
 }
 
-function New-Checkbox ($Location, $Size) {
+function New-Checkbox ($Text, $Location, $Size) {
   $Checkbox = New-Object System.Windows.Forms.CheckBox
+  $Checkbox.Text = $Text
   $Checkbox.Location = New-Object System.Drawing.Point($Location[0], $Location[1])
   $Checkbox.Size = New-Object System.Drawing.Size($Size[0], $Size[1])
   $Checkbox.BackColor = Get-BackgroundColor

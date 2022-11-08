@@ -1,1 +1,1 @@
-Start-Process Powershell.exe -ArgumentList "Script\Push.ps1" -UseNewEnvironment
+Start-Process Powershell.exe -ArgumentList "$PSScriptRoot\Script\Push.ps1" -NoNewWindow

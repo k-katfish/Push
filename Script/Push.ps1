@@ -17,30 +17,24 @@
 #>
 [cmdletBinding()]
 param(
-  [Parameter()][Alias("h")][Switch]$help=$false,
-  [Parameter()][String]$Configure="\\software.engr.colostate.edu\software\ENS\Push_2.0\Configuration.xml",
-  [Parameter()][String]$ColorScheme="Dark",
-  [Parameter()][String]$DesignScheme="Original",
+  [Parameter()][Alias("h")][Switch]$help,
+#  [Parameter()][String]$ColorScheme="Dark",
+#  [Parameter()][String]$DesignScheme="Original",
   [Parameter()][PSCredential]$Credential
 )
 
-if (-Not (Test-Path $PSScriptRoot\Push_Config_Manager.psm1)) {
-  Write-Host "Missing Push Config manager. Is $((Get-Location).Path) a valid push directory?"
-  exit
-}
-
 if ($help) {
-  Get-Help "$PSScriptRoot\Push_2.0.ps1"
+  Get-Help "$PSScriptRoot\Push.ps1"
   exit
 }
 
-if (Get-Module Push_Config_Manager) { Remove-Module Push_Config_Manager }
+if (Get-Module ConfigManager) { Remove-Module ConfigManager }
 if (Get-Module Install_Software) { Remove-Module Install_Software }
 if (Get-Module GUIManager) { Remove-Module GUIManager }
 if (Get-Module PUSHapps_ToolStrip) { Remove-Module PUSHapps_ToolStrip }
 if (Get-Module CredentialManager) {Remove-Module CredentialManager}
 
-Import-Module $PSScriptRoot\Push_Config_Manager.psm1
+Import-Module $PSScriptRoot\ConfigManager.psm1
 Import-Module $PSScriptRoot\Install_Software.psm1
 Import-Module $PSScriptRoot\GUIManager.psm1
 Import-Module $PSScriptRoot\PUSHapps_ToolStrip.psm1
@@ -48,13 +42,13 @@ Import-Module $PSScriptRoot\CredentialManager.psm1
 
 if ($Credential) { Set-StoredPSCredential $Credential }
 
-$Config = Get-PUSH_Configuration $Configure -ColorScheme $ColorScheme -Design $DesignScheme -Application "PUSH"
+#$Config = Get-PUSH_Configuration $Configure -ColorScheme $ColorScheme -Design $DesignScheme -Application "PUSH"
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 #[System.Windows.Forms.Application]::EnableVisualStyles() # maybe this is a color thing?
 
-$OutputBox            = New-Object System.Windows.Forms.TextBox
+
 
 <#
 function GetCreds {
@@ -93,7 +87,7 @@ function GetCreds {
 $GUIForm                    = New-Object System.Windows.Forms.Form
 $GUIForm.ClientSize         = New-Object System.Drawing.Point(900,400)
 $GUIForm.Text               = "Push"
-$GUIForm.Icon               = "$PSScriptRoot\..\Media\Icon.ico"  
+$GUIForm.Icon               = "$PSScriptRoot\..\Media\Icon.ico"
 $GUIForm.StartPosition      = 'CenterScreen'
 $GUIForm.BackColor = Get-BackgroundColor
 
@@ -115,10 +109,9 @@ $ScanComputer         = New-Button -Text "Scan Computer" -Location (625,150) -Si
 $RunExecutablesList   = New-ListBox -Size (345, 150) -Location (275,25)
 $SoftwareFilterTextBox= New-TextBox -Size (78,23) -Location (330,174)
 $SoftwareFilterLabel  = New-Label -Text "Search:" -Location (276,177)
-#$FixesCheckBox        = New-Object System.Windows.Forms.CheckBox
-#$SoftwareCheckBox     = New-Object System.Windows.Forms.CheckBox
-#$UpdatesCheckBox      = New-Object System.Windows.Forms.CheckBox
-$ShowHiddenCheckbox   = New-Checkbox -Text "Show Hidden" -Location (470,175) -Size (80,23)
+$ShowHiddenCheckbox   = New-Checkbox -Text "Show Hidden" -Location (470,175) -Size (150,23)
+
+$OutputBox            = New-TextBox -Size (345, 190) -Location (275,200)
 $DoneLabel            = New-Label -Text "Done" -Location (($OutputBox.Location.X + 2), ($OutputBox.Location.Y + $OutputBox.Height + 130))
 
 $GUIForm.Controls.AddRange(@(
@@ -240,11 +233,11 @@ $SoftwareFilterTextBox.Add_TextChanged({ loadSoftware })
 $ShowHiddenCheckbox.Add_Click({ loadSoftware })
 
 $DoneLabel.Text      = "Not done yet"
-$DoneLabel.Forecolor = $Config.ColorScheme.Success
+$DoneLabel.Forecolor = Get-SuccessColor
 $DoneLabel.visible   = $false
 $DoneLabel.BringToFront()
 
-$ToolStrip = Get-PUSHToolStrip -Config $Config -Application "PUSH" -ConfigurationFile $Configure -dir $Execution_Directory
+<#$ToolStrip = Get-PUSHToolStrip -Config $Config -Application "PUSH" -ConfigurationFile $Configure -dir $Execution_Directory
 
 $TSFExitItem = New-Object System.Windows.Forms.ToolStripMenuItem
 $TSFExitItem.Text = "&Exit"
@@ -255,7 +248,7 @@ $TSFExitItem.ForeColor = $Config.ColorScheme.Foreground
 $TSFExitItem.Add_Click({ $GUIForm.Close() })
 $ToolStrip.Items.Item($ToolSTrip.GetItemAt(5, 2)).DropDownItems.Add($TSFExitItem)
 
-$GUIForm.Controls.Add($ToolStrip)
+$GUIForm.Controls.Add($ToolStrip)#>
 
 $GUIContextMenu = New-Object System.Windows.Forms.ContextMenuStrip
 
@@ -264,22 +257,22 @@ $GCMSetLightMode = New-Object System.Windows.Forms.ToolStripMenuItem
 
 $GCMSetDarkMode.Text = "Change to Dark Mode"
 $GCMSetDarkMode.Add_Click({
-  $GUIContextMenu.MenuItems.Remove($GCMSetDarkMode)
-  $GUIContextMenu.MenuItems.Add($GCMSetLightMode)
+  $GUIContextMenu.Items.Remove($GCMSetDarkMode)
+  $GUIContextMenu.Items.Add($GCMSetLightMode)
   Set-ColorScheme "Dark"
-  Invoke-RefreshColors
-  RefreshPushToolStrip -ToolStrip $ToolStrip -Config $Config -Application "PUSH" 
+  Invoke-RefreshColors $GUIForm
+  #RefreshPushToolStrip -ToolStrip $ToolStrip -Config $Config -Application "PUSH" 
 })
 $GCMSetLightMode.Text = "Change to Light Mode"
 $GCMSetLightMode.Add_Click({
-  $GUIContextMenu.MenuItems.Remove($GCMSetLightMode)
-  $GUIContextMenu.MenuItems.Add($GCMSetDarkMode)
+  $GUIContextMenu.Items.Remove($GCMSetLightMode)
+  $GUIContextMenu.Items.Add($GCMSetDarkMode)
   Set-ColorScheme "Light"
-  Invoke-RefreshColors
-  RefreshPushToolStrip -ToolStrip $ToolStrip -Config $Config -Application "PUSH" 
+  Invoke-RefreshColors $GUIForm
+  #RefreshPushToolStrip -ToolStrip $ToolStrip -Config $Config -Application "PUSH" 
 })
 
-$GUIContextMenu.ContextMenuStrip.Items.Add($GCMSetLightMode)
+$GUIContextMenu.Items.Add($GCMSetLightMode)
 
 $GUIForm.ContextMenuStrip = $GUIContextMenu
 
