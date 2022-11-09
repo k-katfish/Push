@@ -3,21 +3,27 @@
   Tool to Scan a remote computer for information.
 .DESCRIPTION
   This tool is a sub component of PUSH_2.0, and can be used to scan a computer for hardware, software, user, file, etc. information.
-.PARAMETER ComputerName
-  The name of the computer to scan. 
-.INPUTS
-  A hostname to scan
-.OUTPUTS
-  A GUI window with information about the computer.
 .NOTES
-  Version:        1.0.8 [Nasty Networks]
+  Version:        1.0.8
   Author:         Kyle Ketchell
   Creation Date:  May 29, 2022
 .EXAMPLE
-  Scan_Host.ps1 ETS_Test_Computer
+  Scan_Host.ps1 Test_Computer
 #>
 
 function Get-HardwareInfo {
+  <#
+  .SYNOPSIS
+    Get some helpful information about the hardware in a computer
+  .DESCRIPTION
+    Send this a hostname to scan, it will return a PS object as described in OUTPUTS
+  .PARAMETER Hostname
+    The name of a computer to scan
+  .OUTPUTS
+    A PSObject {Name, DNSName, OnDOmain, Domain, Workgroup, Manufacturer, Model, Serial, RAM}
+  .EXAMPLE
+    Get-HardwareInfo Server-01
+  #>
   param([String]$Hostname)
   $Enclosure = Get-CimInstance Win32_SystemEnclosure -ComputerName $Hostname
   $System    = Get-CimInstance Win32_ComputerSystem -ComputerName $Hostname
@@ -37,6 +43,18 @@ function Get-HardwareInfo {
 }
 
 function Get-ProcessorInfo {
+  <#
+  .SYNOPSIS
+    Get some helpful information about the processor in a computer
+  .DESCRIPTION
+    Send this a hostname to scan, it will return a PS object as described in OUTPUTS
+  .PARAMETER Hostname
+    The name of a computer to scan
+  .OUTPUTS
+    A PSObject {Name, Speed, Cores, LogicalProcessors}
+  .EXAMPLE
+    Get-HardwareInfo Server-01
+  #>
   param ([String]$Hostname)
   $Processor = Get-CimInstance Win32_Processor -ComputerName $Hostname
   $NameString = $Processor.Name
@@ -55,10 +73,27 @@ function Get-ProcessorInfo {
     LogicalProcessors = $Processor.NumberOfLogicalProcessors
   }
   $ProcessorInformation = New-Object PSObject -Property $Info
+
+  Add-Member -InputObject $ProcessorInformation -MemberType "ScriptMethod" -Name "ToString" -Value {
+    return "$($this.Name)`r`n$($this.Speed)`r`n$($this.Cores) Cores`r`n$($this.LogicalProcessors) Logical Processors`r`n"
+  }
+
   return $ProcessorInformation
 }
 
 function Get-SoftwareInfo {
+  <#
+  .SYNOPSIS
+    Get some helpful information about the OperatingSystem installed on a computer
+  .DESCRIPTION
+    Send this a hostname to scan, it will return a PS object as described in OUTPUTS
+  .PARAMETER Hostname
+    The name of a computer to scan
+  .OUTPUTS
+    A PSObject {Caption, Version, Time, BootTime, Uptime, InstallDate, RUser, ROrganization, Users, FreeRAM}
+  .EXAMPLE
+    Get-HardwareInfo Server-01
+  #>
   param([String]$Hostname)
   $OS = Get-CimInstance Win32_OperatingSystem -ComputerName $Hostname
   $CS = Get-CimInstance Win32_ComputerSystem -ComputerName $Hostname
@@ -79,10 +114,17 @@ function Get-SoftwareInfo {
 }
 
 function Get-DiskInfo {
+    <#
+  .SYNOPSIS
+    Get some helpful information about the disks in a computer
+  .DESCRIPTION
+    Send this a hostname to scan, it will return a PS object as described in OUTPUTS
+  .PARAMETER Hostname
+    The name of a computer to scan
+  .EXAMPLE
+    Get-HardwareInfo Server-01
+  #>
   param ( [String]$Hostname )
-  #Holy Shit its tough as balls to correlate a physical disk to a logical disk.
-
-<#I think there's something going wrong if there's only one disk in the computer...#>
 
   $LocalDisks = Get-WmiObject Win32_DiskDrive -ComputerName $Hostname | ForEach-Object {
     $disk = $_
@@ -255,8 +297,19 @@ function Get-RunningProcesses {
 }
 #>
 
-
 function Get-NetworkInfo {
+  <#
+  .SYNOPSIS
+    Get some helpful information about the NIC in a computer
+  .DESCRIPTION
+    Send this a hostname to scan, it will return a PS object as described in OUTPUTS
+  .PARAMETER Hostname
+    The name of a computer to scan
+  .OUTPUTS
+    A PSObject {Name, DHCPEnabled, DHCPLeaseExpires, DHCPLeaseObtained, DHCPServer, DNSDomain, DNSDomainSuffixSearchOrder, DNSHostName, FullDNSRegistrationEnabled, IPAddress, IPEnabled, DefaultIPGateway, IPSubnet, MACAddress, ServiceName, Speed, AdapterType, UID, Manufacturer, NetConnectionID, NetEnabled, ProductName, TimeOfLastReset}
+  .EXAMPLE
+    Get-HardwareInfo Server-01
+  #>
   param ( [String]$Hostname )
   $NetworkAdapterConfiguration  = Get-CimInstance Win32_NetworkAdapterConfiguration -ComputerName $Hostname | Where-Object { $_.IPAddress } # get network adapters which actually have an IP
   $NetworkAdapter = Get-CimAssociatedInstance $NetworkAdapterConfiguration -ComputerName $Hostname
@@ -285,6 +338,10 @@ function Get-NetworkInfo {
     NetEnabled = $NetworkAdapter.NetEnabled
     ProductName = $NetworkAdapter.ProductName
     TimeOfLastReset = $NetworkAdapter.TimeOfLastReset
+  }
+
+  Add-Member -InputObject $NetworkInformation -MemberType "ScriptMethod" -Name "ToString" -Value {
+    return "$($this.Name )"
   }
 
   return $NetworkInformation

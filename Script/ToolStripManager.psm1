@@ -17,6 +17,17 @@ function Get-NewTSItem {
     Invoke-ConfigureTSItem $NewTSItem -Text $Text
     return $NewTSItem
 }
+
+function RefreshToolStrip {
+    param($ToolStrip)
+ 
+    $ToolStrip.BackColor = Get-ToolStripBackgroundColor
+    $ToolStrip.ForeColor = Get-ForegroundColor
+
+    $ToolStrip.Items | ForEach-Object {
+        Invoke-ConfigureTSItem $_ $_.Text.Substring(1)
+    }
+}
   
 function Invoke-TSManageComputer ($ManageComponent) {
     $InputForm               = New-Object System.Windows.Forms.Form
@@ -71,16 +82,4 @@ function Invoke-TSHelpReader ($HelpOption) {
     }
     $HelpForm.Controls.Add($HelpText)
     $HelpForm.ShowDialog()
-}
-  
-
-function RefreshToolStrip {
-    param($ToolStrip)#$Config, [String]$Application)
- 
-    $ToolStrip.BackColor = Get-ToolStripBackgroundColor
-    $ToolStrip.ForeColor = Get-ForegroundColor
-
-    $ToolStrip.Items | ForEach-Object {
-        Invoke-ConfigureTSItem $_ $_.Text.Substring(1)
-    }
 }

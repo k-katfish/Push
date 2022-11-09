@@ -18,8 +18,6 @@
 [cmdletBinding()]
 param(
   [Parameter()][Alias("h")][Switch]$help,
-#  [Parameter()][String]$ColorScheme="Dark",
-#  [Parameter()][String]$DesignScheme="Original",
   [Parameter()][PSCredential]$Credential
 )
 

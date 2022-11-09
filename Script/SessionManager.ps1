@@ -6,7 +6,7 @@
 .PARAMETER c, computer
   Required: Provide a computer name to scan for
 .NOTES
-  Version:       1.5 [Real Resurrection]
+  Version:       1.5
   Author:        Kyle Ketchell
   Creation Date: 6/21/22
 .EXAMPLE
@@ -67,6 +67,9 @@ function Main {
   $HostnameBox = New-TextBox -Location (85, 35) -Size (200, 23)
   $HostnameBox.ForeColor = Get-BackgroundColor
   $HostnameBox.BackColor = Get-ForegroundColor
+  $HostnameBox.Add_KeyDown({
+    if ($PSItem.KeyCode -eq "Enter") { $FindButton.PerformClick() }
+  })
   $HostnameBox.Enabled   = $false
 
   $GroupLabel = New-Label -Text "Group: " -Location (290, 35)
@@ -74,6 +77,9 @@ function Main {
   $GroupBox.ForeColor = Get-BackgroundColor
   $GroupBox.BackColor = Get-ForegroundColor
   $GroupBox.Enabled   = $false
+  $GroupBox.Add_KeyDown({
+    if ($PSItem.KeyCode -eq "Enter") { $FindButton.PerformClick() }
+  })
   $SessionManagerForm.Controls.Add($GroupBox)
 
   $UsernameLabel = New-Label -Text "Username: " -Location (10, 60)
@@ -81,6 +87,9 @@ function Main {
   $UsernameBox.ForeColor = Get-BackgroundColor #Yes this is intentional
   $UsernameBox.BackColor = Get-ForegroundColor #Yes this is intentional
   $UsernameBox.Enabled   = $false
+  $UsernameBox.Add_KeyDown({
+    if ($PSItem.KeyCode -eq "Enter") { $FindButton.PerformClick() }
+  })
   $SessionManagerForm.Controls.AddRange(@($FindLabel, $FindDropdown, $HostnameLabel, $HostnameBox, $GroupLabel, $GroupBox, $UsernameLabel, $UsernameBox))
   
   $FindDropdown.Add_SelectedIndexChanged({
