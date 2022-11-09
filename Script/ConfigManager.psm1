@@ -39,10 +39,22 @@ function Get-ErrorColor {
   return $script:Config.Configuration.$script:SelectedColorScheme.Error
 }
 
+function Get-FlatStyle {
+  return $script:Config.Configuration.$script:SelectedDesignScheme.FlatStyle
+}
+
+function Get-BorderStyle {
+  return $script:Config.Configuration.$script:SelectedDesignScheme.BorderStyle
+}
+
 function Get-FontSettings {
   return New-Object System.Drawing.Font($script:Config.Configuration.$script:SelectedDesignScheme.FontName, $script:Config.Configuration.$script:SelectedDesignScheme.FontSize)
 }
 
 function Set-ColorScheme ($SchemeName) {
   $script:SelectedColorScheme = $SchemeName
+}
+
+function Set-DesignSecheme ($SchemeName) {
+  $script:SelectedDesignScheme = $SchemeName
 }

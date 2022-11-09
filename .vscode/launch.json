@@ -9,6 +9,12 @@
             "type": "PowerShell",
             "request": "launch",
             "script": "${workspaceFolder}\\LaunchPush.ps1"
+        },
+        {
+            "name": "Current",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${relativeFile}"
         }
     ]
 }

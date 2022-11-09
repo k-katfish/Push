@@ -25,6 +25,7 @@ function New-Button ($Text, $Location, $Size) {
   $Button.BackColor = Get-BackgroundColor
   $Button.ForeColor = Get-ForegroundColor
   $Button.Font = Get-FontSettings
+  $Button.FlatStyle = Get-FlatStyle
   return $Button
 }
 
@@ -47,6 +48,7 @@ function New-ComboBox ($Location, $Size, $Text = "Select...") {
   $ComboBox.BackColor = Get-BackgroundColor
   $ComboBox.ForeColor = Get-ForegroundColor
   $ComboBox.Font = Get-FontSettings
+  $ComboBox.FlatStyle = Get-FlatStyle
   return $ComboBox
 }
 
@@ -67,6 +69,7 @@ function New-ListBox ($Location, $Size) {
   $ListBox.BackColor = Get-BackgroundColor
   $ListBox.ForeColor = Get-ForegroundColor
   $ListBox.Font = Get-FontSettings
+  $ListBox.BorderStyle = Get-BorderStyle
   return $ListBox
 }
 
