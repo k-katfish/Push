@@ -31,13 +31,13 @@ if ($help) {
 if (Get-Module ConfigManager) { Remove-Module ConfigManager }
 if (Get-Module Install_Software) { Remove-Module Install_Software }
 if (Get-Module GUIManager) { Remove-Module GUIManager }
-if (Get-Module PUSHapps_ToolStrip) { Remove-Module PUSHapps_ToolStrip }
+if (Get-Module ToolStripManager) { Remove-Module ToolStripManager }
 if (Get-Module CredentialManager) {Remove-Module CredentialManager}
 
 Import-Module $PSScriptRoot\ConfigManager.psm1
 Import-Module $PSScriptRoot\Install_Software.psm1
 Import-Module $PSScriptRoot\GUIManager.psm1
-Import-Module $PSScriptRoot\PUSHapps_ToolStrip.psm1
+Import-Module $PSScriptRoot\ToolStripManager.psm1
 Import-Module $PSScriptRoot\CredentialManager.psm1
 
 if ($Credential) { Set-StoredPSCredential $Credential }
@@ -237,18 +237,66 @@ $DoneLabel.Forecolor = Get-SuccessColor
 $DoneLabel.visible   = $false
 $DoneLabel.BringToFront()
 
-<#$ToolStrip = Get-PUSHToolStrip -Config $Config -Application "PUSH" -ConfigurationFile $Configure -dir $Execution_Directory
 
-$TSFExitItem = New-Object System.Windows.Forms.ToolStripMenuItem
-$TSFExitItem.Text = "&Exit"
-$TSFExitItem.Add_MouseEnter({ $this.ForeColor = $Config.ColorScheme.ToolStripHover })
-$TSFExitItem.Add_MouseLeave({ $this.ForeColor = $Config.ColorScheme.Foreground })
-$TSFExitItem.BackColor = $Config.ColorScheme.ToolStripBackground
-$TSFExitItem.ForeColor = $Config.ColorScheme.Foreground
-$TSFExitItem.Add_Click({ $GUIForm.Close() })
-$ToolStrip.Items.Item($ToolSTrip.GetItemAt(5, 2)).DropDownItems.Add($TSFExitItem)
 
-$GUIForm.Controls.Add($ToolStrip)#>
+$ToolStrip = New-Object System.Windows.Forms.MenuStrip
+$ToolStrip.BackColor = Get-ToolStripBackgroundColor
+$ToolStrip.ForeColor = Get-ForegroundColor
+
+$TSFile = Get-NewTSItem "File"
+$TSFUser = Get-NewTSItem "Launch Session Manager"
+$TSFUser.Add_Click({ Start-Process Powershell -ArgumentList "powershell $PSScriptRoot\SessionManager.ps1" <#-NoNewWindow#> -WindowStyle:Hidden })
+$TSFExitItem = Get-NewTSItem "Exit"
+$TSFExitItem.Add_Click({ $GUIForm.Close(); exit })
+$TSFile.DropDownItems.AddRange(@($TSFUser, $TSFExitItem))
+
+$TSComputer  = Get-NewTSItem "Remote Computer"
+$TSCScanHost  = Get-NewTSItem "Scan Host"
+$TSCScanHost.Add_Click({ Invoke-TSManageComputer "scan" })
+$TSCFiles    = Get-NewTSItem "Files on C:\ Drive"
+$TSCFiles.Add_Click({ Invoke-TSManageComputer "explorer.exe" })
+$TSCLusr     = Get-NewTSItem "Users and Groups" 
+$TSCLusr.Add_Click({ Invoke-TSManageComputer "lusrmgr.msc" })
+$TSCGPEdit   = Get-NewTSItem "Edit Group Policy"
+$TSCGPEdit.Add_Click({ Invoke-TSManageComputer "gpedit.msc" })
+$TSCGPUpdate = Get-NewTSItem "Force Group Policy Update"
+$TSCGPUpdate.Add_Click({ Invoke-TSManageComputer "gpupdate" })
+$TSCGPolicy  = Get-NewTSItem "Manage Group Policy"
+$TSCGPolicy.DropDownItems.AddRange(@($TSCGPEdit,$TSCGPUpdate))
+#$TSCSessions = Get-NewTSItem "Manage User Sessions"              #   #   #  |
+#$TSCSessions.Add_Click({ Invoke-TSManageComputer "sessions" })   #   #   # do this if we click it
+$TSCManage   = Get-NewTSItem "Computer Manager"
+$TSCManage.Add_Click({ Invoke-TSManageComputer "compmgmt.msc" })
+$TSCRestart  = Get-NewTSItem "Restart Computer"
+$TSCRestart.Add_Click({ Invoke-TSManageComputer "restart" })
+$TSCShutdown = Get-NewTSItem "Shutdown Computer"
+$TSCShutdown.Add_Click({ Invoke-TSManageComputer "shutdown" }) 
+$TSComputer.DropDownItems.AddRange(@($TSCScanHost, $TSCFiles, $TSCLusr, $TSCGPolicy, <#$TSCSessions,#> $TSCManage, $TSCRestart, $TSCShutdown))
+
+$TSHAbout    = Get-NewTSItem "About"
+$TSHAbout.Add_Click({ Invoke-TSHelpReader "About.txt" })
+$TSHGroups   = Get-NewTSItem "Managing PUSH Groups"
+$TSHGroups.Add_Click({ Invoke-TSHelpReader "Groups.txt" })
+$TSHSoftware = Get-NewTSItem "Adding Software to PUSH"
+$TSHSoftware.Add_Click({ Invoke-TSHelpReader "Software.txt" })
+$TSHPatches  = Get-NewTSItem "Adding Fixes to Push"
+$TSHPatches.Add_Click({ Invoke-TSHelpReader "Scripts-Patches-Fixes.txt" })
+$TSHMessages = Get-NewTSItem "Creating a PopUp message for a software"
+$TSHMessages.Add_Click({ Invoke-TSHelpReader "Messages_Install.txt" })
+$TSHRemote   = Get-NewTSItem "About Remote Computer Tools"
+$TSHRemote.Add_Click({ Invoke-TSHelpReader "Remote_Computer.txt" })
+#$TSHUseCSSP  = Get-NewTSItem "What is CredSSP?"
+#$TSHUseCSSP.Add_Click({ Invoke-TSHelpReader "UseCSSP.txt" })
+$TSHelp = Get-NewTSItem "Help"
+$TSHelp.DropDownItems.AddRange(@($TSHAbout, $TSHGroups, $TSHSoftware, $TSHPatches, $TSHMessages, $TSHRemote))
+
+$ToolStrip.Items.AddRange(@($TSFile,$TSComputer, $TSHelp))
+
+#$ToolStrip.Items.Item($ToolSTrip.GetItemAt(5, 2)).DropDownItems.Add($TSFExitItem)
+
+$GUIForm.Controls.Add($ToolStrip)
+
+
 
 $GUIContextMenu = New-Object System.Windows.Forms.ContextMenuStrip
 
@@ -261,7 +309,7 @@ $GCMSetDarkMode.Add_Click({
   $GUIContextMenu.Items.Add($GCMSetLightMode)
   Set-ColorScheme "Dark"
   Invoke-RefreshColors $GUIForm
-  #RefreshPushToolStrip -ToolStrip $ToolStrip -Config $Config -Application "PUSH" 
+  RefreshToolStrip -ToolStrip $ToolStrip 
 })
 $GCMSetLightMode.Text = "Change to Light Mode"
 $GCMSetLightMode.Add_Click({
@@ -269,7 +317,7 @@ $GCMSetLightMode.Add_Click({
   $GUIContextMenu.Items.Add($GCMSetDarkMode)
   Set-ColorScheme "Light"
   Invoke-RefreshColors $GUIForm
-  #RefreshPushToolStrip -ToolStrip $ToolStrip -Config $Config -Application "PUSH" 
+  RefreshToolStrip -ToolStrip $ToolStrip 
 })
 
 $GUIContextMenu.Items.Add($GCMSetLightMode)
