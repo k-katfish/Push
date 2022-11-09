@@ -42,7 +42,7 @@ function New-Label ($Text, $Location) {
 
 function New-ComboBox ($Location, $Size, $Text = "Select...") {
   $ComboBox = New-Object System.Windows.Forms.ComboBox
-  $ComboBox.Text = "Select..."
+  $ComboBox.Text = $Text
   $ComboBox.Location = New-Object System.Drawing.Point($Location[0], $Location[1])
   $ComboBox.Size = New-Object System.Drawing.Size($Size[0], $Size[1])
   $ComboBox.BackColor = Get-BackgroundColor

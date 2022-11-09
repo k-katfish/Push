@@ -91,8 +91,8 @@ $GUIForm.Icon               = "$PSScriptRoot\..\Media\Icon.ico"
 $GUIForm.StartPosition      = 'CenterScreen'
 $GUIForm.BackColor = Get-BackgroundColor
 
-$SelectGroupLabel     = New-Label -Text "Select Group:" -Location (16,25)
-$SelectGroup          = New-ComboBox -Text "All Machines" -Location (97,25) -Size (174, 23)
+#$SelectGroupLabel     = New-Label -Text "Select Group:" -Location (5,27)
+$SelectGroup          = New-ComboBox -Text "Select Group..." -Location (16,25) -Size (256, 23)
 
 $SelectAll            = New-Button -Text "Select All" -Location (16,50) -Size (128,23)
 $SelectNone           = New-Button -Text "Select None" -Location (144,50) -Size (128,23)
@@ -107,9 +107,9 @@ $EnterPS              = New-Button -Text "Enter PSSession" -Location (625,125) -
 $ScanComputer         = New-Button -Text "Scan Computer" -Location (625,150) -Size (256,25)
 
 $RunExecutablesList   = New-ListBox -Size (345, 150) -Location (275,25)
-$SoftwareFilterTextBox= New-TextBox -Size (78,23) -Location (330,174)
+$SoftwareFilterTextBox= New-TextBox -Size (150,23) -Location (330,174)
 $SoftwareFilterLabel  = New-Label -Text "Search:" -Location (276,177)
-$ShowHiddenCheckbox   = New-Checkbox -Text "Show Hidden" -Location (470,175) -Size (150,23)
+$ShowHiddenCheckbox   = New-Checkbox -Text "Show Hidden" -Location (500,175) -Size (150,23)
 
 $OutputBox            = New-TextBox -Size (345, 190) -Location (275,200)
 $DoneLabel            = New-Label -Text "Done" -Location (($OutputBox.Location.X + 2), ($OutputBox.Location.Y + $OutputBox.Height + 130))

@@ -6,6 +6,9 @@ function Invoke-ConfigureTSItem {
     $TSItem.ForeColor = Get-ForegroundColor
     $TSItem.Add_MouseEnter({ $this.ForeColor = Get-ToolStripHoverColor })
     $TSItem.Add_MouseLeave({ $this.ForeColor = Get-ForegroundColor })
+    $TSItem.DropDownItems | ForEach-Object {
+        Invoke-ConfigureTSItem $_ $_.Text.SubString(1)
+    }
 }
   
 function Get-NewTSItem {
@@ -22,30 +25,8 @@ function Invoke-TSManageComputer ($ManageComponent) {
     $InputForm.TopMost       = $true
     $InputForm.StartPosition = 'CenterScreen'
     $InputForm.BackColor     = Get-BackgroundColor
-    #$InputForm.Icon          = Convert-Path($script:PushConfiguration.Design.Icon)
-    #$HostnameLabel            = New-Object System.Windows.Forms.Label   #   # make a label
-    #$HostnameLabel.Text       = "Enter Computer Name:"              #   #   # says that
-    #$HostnameLabel.height     = 23                                  #   #   # that tall
-    #$HostnameLabel.Width      = 150                                 #   #   # that wide
-    #$HostnameLabel.Location   = New-Object System.Drawing.Point(10,20)  #   # there
-    #$HostnameLabel.Font       = New-Object System.Drawing.Font($script:PushConfiguration.Design.FontName, $script:PushConfiguration.Design.FontSize) # that font
-    #$HostnameLabel.Forecolor  = $script:PushConfiguration.ColorScheme.Foreground # that text color
-    #$HostnameLabel.BackColor  = $script:PushConfiguration.ColorScheme.Background # that background color
     $HostnameLabel = New-Label -Text "Enter Computer name:" -Location (10, 20)
-#    $InputBox          = New-Object System.Windows.Forms.TextBox    #   #   # Make an input text box
-#    $InputBox.Height   = 23                                         #   #   # that tall
-#    $InputBox.Width    = 200                                        #   #   # that wide
-#    $InputBox.Location = New-Object System.Drawing.Point(10,50)     #   #   # there
-#    $InputBox.Font     = New-Object System.Drawing.Font($script:PushConfiguration.Design.FontName, $script:PushConfiguration.Design.FontSize)# that font
-#    $InputBox.Text     = $ManualNameTextBox.Text                    #   #   # and auto fill the text
     $InputBox = New-TextBox -Location (10, 50) -Size (200, 23)
-#    $OKButton              = New-Object System.Windows.Forms.Button #   #   # Make an OK button
-#    $OKButton.Height       = 23                                     #   #   # that tall
-#    $OKButton.Width        = 50                                     #   #   # that wide 
-#    $OKButton.Location     = New-Object System.Drawing.Point(10,80) #   #   # there
-#    $OKButton.Font         = New-Object System.Drawing.Font($script:PushConfiguration.Design.FontName, $script:PushConfiguration.Design.FontSize)# that font
-#    $OKButton.Text         = "GO"                                   #   #   # it says that
-#    $OKButton.ForeColor = $script:PushConfiguration.ColorScheme.Foreground  #
     $OKButton = New-Button -Text "GO" -Location (10, 80) -Size (50, 23)
     $OKButton.Add_Click({
       $TSManageComputerName = $InputBox.Text
@@ -96,54 +77,10 @@ function Invoke-TSHelpReader ($HelpOption) {
 function RefreshToolStrip {
     param($ToolStrip)#$Config, [String]$Application)
  
-    $ToolStrip.BackColor = Get-BackgroundColor
+    $ToolStrip.BackColor = Get-ToolStripBackgroundColor
     $ToolStrip.ForeColor = Get-ForegroundColor
 
     $ToolStrip.Items | ForEach-Object {
         Invoke-ConfigureTSItem $_ $_.Text.Substring(1)
-        $_.DropDownItems | ForEach-Object {
-            Invoke-ConfigureTSItem $_ $_.Text.SubString(1)
-        }
     }
-    
-#    $script:PushConfiguration = $Config
-  
-#    log "PUSHApps Tool Strip: Refreshing Tool Strip..." 0
-#    $ToolStrip.BackColor = $script:PushConfiguration.ColorScheme.ToolStripBackground
-#    $ToolStrip.ForeColor = $script:PushConfiguration.ColorScheme.Foreground
-#    log "PUSHApps Tool Strip: Refreshed Tool Strip." 0
-  
-    <##############################################################################>
-  
-  
-#    $ToolStripFileItem = $ToolStrip.Items.Item($ToolStrip.GetItemAt(5, 2))
-#    Invoke-ConfigureTSItem $ToolStripFileItem $ToolStripFileItem.Text.Substring(1)
-    
-#    $ToolStripFileItem.DropDownItems | ForEach-Object {
-#      Invoke-ConfigureTSItem $_ $_.Text.Substring(1)
-#    }
-#    log "PUSHApps Tool Strip: Refreshed File Menu Item." 0
-  
-    <##############################################################################>
-  
-  
-#    log "PUSHApps Tool Strip: Refreshing Remote Computer menu item." 0
-#    $ToolStripRemoteItem = $ToolStrip.GetNextItem($ToolStripFileItem, 16)
-#    Invoke-ConfigureTSItem $ToolStripRemoteItem $ToolStripRemoteItem.Text.Substring(1)
-  
-#    $ToolStripRemoteItem.DropDownItems | ForEach-Object {
-#      Invoke-ConfigureTSItem $_ $_.Text.Substring(1)
-#    }
-#    log "PUSHapps ToolStrip: Refreshed Remote Computer menuitem & dropdownitems" 0
-##  
-#    <##############################################################################>
-#  
-#    log "PUSHapps ToolStrip: Refreshing Help menuitems..." 0
-#    $ToolStripHelpItem = $ToolStrip.GetNextItem($ToolStripRemoteItem, 16)
-#    Invoke-ConfigureTSItem $ToolStripHelpItem $ToolStripHelpItem.Text.Substring(1)
-#  
-#    $ToolStripHelpItem.DropDownItems | ForEach-Object {
-#      Invoke-ConfigureTSItem $_ $_.Text.Substring(1)
-#    }
-#    log "PUSHapps ToolStrip: Refreshed Help Menu and dropdown items." 0
 }
