@@ -115,7 +115,7 @@ function Start-Install {
       $WorkingMachines | ForEach-Object {            
         Start-Process powershell.exe -ArgumentList "Enable-WSManCredSSP","Client","$_","-Force" -Verb RunAs -Wait 
       }                                                          
-      #Start-Process powershell.exe -ArgumentList "Enable-WSManCredSSP","-Role","'Client'","-DelegateComputer",'"*.engr.colostate.edu"',"-Force" -Verb RunAs -Wait 
+      Start-Process powershell.exe -ArgumentList "Enable-WSManCredSSP","-Role","'Client'","-DelegateComputer",'"*.engr.colostate.edu"',"-Force" -Verb RunAs -Wait 
       Invoke-Command -ComputerName $WorkingMachines -ScriptBlock {          
         Start-Process powershell.exe -ArgumentList "Enable-WSManCredSSP","Server","-Force" -Verb RunAs -Wait  
       }                         

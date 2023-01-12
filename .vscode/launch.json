@@ -15,6 +15,13 @@
             "type": "PowerShell",
             "request": "launch",
             "script": "${relativeFile}"
+        },
+        {
+            "name": "Push_Dev",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${relativeFile}",
+            "args": ["-configure", "${workspaceFolder}\\Script\\config-kkatfish-devel.xml"]
         }
     ]
 }

@@ -8,16 +8,21 @@
 .OUTPUTS
   A log file, optionally (enabled by default). You can disable the log file if you're running push in silent mode.
 .NOTES
-  Version:          2.1
+  Version:          2.1.1
   Authors:          Kyle Ketchell, Matt Smith
   Version Creation: November 7, 2022
   Orginal Creation: May 29, 2022
+.PARAMETER configure, Configuration_File
+  The path to a configuration file. For example, you might have a push configuration file stored somewhere else that you use for debugging or something idk.
 .EXAMPLE
   push_2.0
+.EXAMPLE
+  push_2.0 -configure C:\Users\me\Desktop\push_config.xml
 #>
 [cmdletBinding()]
 param(
   [Parameter()][Alias("h")][Switch]$help,
+  [Parameter()][Alias("configure")]$Configuration_File,
   [Parameter()][PSCredential]$Credential
 )
 
@@ -38,6 +43,7 @@ Import-Module $PSScriptRoot\GUIManager.psm1
 Import-Module $PSScriptRoot\ToolStripManager.psm1
 Import-Module $PSScriptRoot\CredentialManager.psm1
 
+if ($Configuration_File) { Set-ConfigurationFile $Configuration_File }
 if ($Credential) { Set-StoredPSCredential $Credential }
 
 #$Config = Get-PUSH_Configuration $Configure -ColorScheme $ColorScheme -Design $DesignScheme -Application "PUSH"
@@ -209,7 +215,7 @@ $ScanComputer.Add_Click({
   $OutputBox.AppendText(".")
   Start-Sleep -Milliseconds 300
   $OutputBox.AppendText(".`r`n") # kind of rudimentary but its also awesome looking so deal with it - Matt
-  Start-Process Powershell -ArgumentList "powershell $PSScriptRoot\Scan_Host.exe -Hostname $($ManualNameTextBox.Text) -dir $Execution_Directory -configure $Configure -ColorScheme $ColorScheme -DesignScheme $DesignScheme" -NoNewWindow
+  Start-Process Powershell -ArgumentList "powershell $PSScriptRoot\ScanHost.ps1 -Hostname $($ManualNameTextBox.Text)" -WindowStyle:Hidden
 })
 
 function loadSoftware {
@@ -244,9 +250,13 @@ $ToolStrip.ForeColor = Get-ForegroundColor
 $TSFile = Get-NewTSItem "File"
 $TSFUser = Get-NewTSItem "Launch Session Manager"
 $TSFUser.Add_Click({ Start-Process Powershell -ArgumentList "powershell $PSScriptRoot\SessionManager.ps1" <#-NoNewWindow#> -WindowStyle:Hidden })
+$TSFMDTShare = Get-NewTSItem "Connect to MDT Share"
+$TSFMDTShare.Add_Click({
+  #do - the - mdt - share - things...
+})
 $TSFExitItem = Get-NewTSItem "Exit"
 $TSFExitItem.Add_Click({ $GUIForm.Close(); exit })
-$TSFile.DropDownItems.AddRange(@($TSFUser, $TSFExitItem))
+$TSFile.DropDownItems.AddRange(@($TSFUser, $TSFMDTShare, $TSFExitItem))
 
 $TSComputer  = Get-NewTSItem "Remote Computer"
 $TSCScanHost  = Get-NewTSItem "Scan Host"

@@ -58,3 +58,7 @@ function Set-ColorScheme ($SchemeName) {
 function Set-DesignSecheme ($SchemeName) {
   $script:SelectedDesignScheme = $SchemeName
 }
+
+function Set-ConfigurationFile ($Configuration_File) {
+  $script:Config = [XML](Get-Content $Configuration_File)
+}
